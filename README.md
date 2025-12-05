@@ -1,4 +1,4 @@
-CS461: ระบบนับจำนวนสินค้าบนชั้นวางอัตโนมัติ (Automated Shelf Product Counting System)
+#CS461: ระบบนับจำนวนสินค้าบนชั้นวางอัตโนมัติ (Automated Shelf Product Counting System)
 
 โปรเจกต์นี้เป็นการพัฒนาระบบ Computer Vision เพื่อตรวจจับและนับจำนวนสินค้าบนชั้นวางของในร้านค้าโดยอัตโนมัติ โดยใช้เทคนิค Object Detection ขั้นสูง (YOLOv8) ซึ่งช่วยลดเวลาและความผิดพลาดในการจัดการสินค้าคงคลัง (Inventory Management)
 Frontend Demo: เว็บไซต์สาธิตที่สามารถอัปโหลดรูปภาพและนับจำนวนสินค้าได้ทันที:
@@ -32,7 +32,7 @@ B. การรัน API Server
 
 รัน Gunicorn (สำหรับ Production Server) โดยชี้ไปที่ไฟล์ app.py:
 
-# รัน Flask App (app.py) ด้วย Gunicorn
+รัน Flask App (app.py) ด้วย Gunicorn
 gunicorn app:app -w 4 -b 0.0.0.0:5000
 
 
