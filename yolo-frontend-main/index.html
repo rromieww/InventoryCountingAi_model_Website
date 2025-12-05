@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Inventory AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS โค้ดเดิมทั้งหมด (ไม่ได้เปลี่ยนแปลง) */
+        :root {
+            --primary: #00f2ff; /* สีฟ้านีออน */
+            --secondary: #7000ff; /* สีม่วง */
+            --bg-dark: #050510;
+            --bg-panel: rgba(20, 20, 35, 0.8);
+            --success: #00ff9d;
+            --error: #ff3333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(112, 0, 255, 0.1) 0%, transparent 40%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 900px;
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-family: 'Chakra Petch', sans-serif;
+            font-weight: 700;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8892b0;
+            margin-bottom: 40px;
+            font-size: 0.9rem;
+        }
+
+        /* --- ส่วนอัปโหลด --- */
+        .upload-zone {
+            border: 2px dashed rgba(0, 242, 255, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            background: rgba(0, 242, 255, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: rgba(0, 242, 255, 0.05);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        .icon-folder { font-size: 48px; margin-bottom: 15px; display: block; filter: drop-shadow(0 0 10px var(--primary)); }
+        .upload-text { font-size: 1.1rem; color: #ccd6f6; }
+        .upload-hint { font-size: 0.8rem; color: #8892b0; margin-top: 5px; }
+
+        /* --- ส่วนแสดงผล --- */
+        #displayArea {
+            display: none;
+            margin-top: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .image-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            line-height: 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        img { width: 100%; display: block; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* --- Animation ตอนโหลด --- */
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 5px;
+            background: var(--primary);
+            box-shadow: 0 0 20px var(--primary);
+            animation: scan 1.5s linear infinite;
+            display: none;
+            z-index: 10;
+        }
+        .loading .scan-line { display: block; }
+
+        @keyframes scan {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* --- ผลลัพธ์ตัวเลข --- */
+        .result-box {
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .count-number {
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--success);
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+        }
+
+        /* --- สถานะ --- */
+        .status-text {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: 600;
+            min-height: 24px;
+        }
+        .text-process { color: var(--primary); animation: pulse 1s infinite; }
+        .text-error { color: var(--error); }
+        .text-success { color: var(--success); }
+
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* ปุ่มเลือกไฟล์ซ่อนไว้ */
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h1>AI Inventory Vision</h1>
+        <p class="subtitle">ระบบนับสต็อกสินค้าอัจฉริยะด้วย YOLOv8</p>
+
+        <div class="upload-zone" id="dropZone">
+            <span class="icon-folder">📁</span>
+            <div class="upload-text">คลิกเพื่อเลือกรูป หรือ ลากไฟล์มาวางที่นี่</div>
+            <div class="upload-hint">รองรับไฟล์ JPG, PNG</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+
+        <div class="status-text" id="statusText"></div>
+
+        <div id="displayArea">
+            <div class="image-container" id="imgWrapper">
+                <img id="previewImg" src="">
+                <canvas id="overlayCanvas"></canvas>
+                <div class="scan-line"></div>
+            </div>
+
+            <div class="result-box" id="resultBox">
+                <div style="font-size: 0.9rem; color: #aaa;">ตรวจพบสินค้าทั้งหมด</div>
+                <div class="count-number" id="countNum">0</div>
+                <div style="font-size: 0.9rem; color: #aaa;">ชิ้น</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =================================================================
+        // แก้ไข URL API
+        // SERVER_ROOT_URL คือ URL หลักของ Render (เช่น https://yolo-backend-api.onrender.com)
+        // =================================================================
+        const SERVER_ROOT_URL = "https://yolo-backend-api.onrender.com"; 
+        const DETECT_ENDPOINT = SERVER_ROOT_URL + "/detect";
+
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const displayArea = document.getElementById('displayArea');
+        const imgWrapper = document.getElementById('imgWrapper');
+        const img = document.getElementById('previewImg');
+        const canvas = document.getElementById('overlayCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('statusText');
+        const resultBox = document.getElementById('resultBox');
+        const countNum = document.getElementById('countNum');
+
+        // --- Event Listeners (Drag & Drop) ---
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => { 
+            e.preventDefault(); 
+            dropZone.style.borderColor = '#00f2ff'; 
+            dropZone.style.background = 'rgba(0, 242, 255, 0.1)';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => { 
+            dropZone.style.borderColor = 'rgba(0, 242, 255, 0.3)'; 
+            dropZone.style.background = 'rgba(0, 242, 255, 0.02)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'rgba(0, 242, 255, 0.3)';
+            dropZone.style.background = 'rgba(0, 242, 255, 0.02)';
+            if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        // --- ฟังก์ชันจัดการไฟล์ ---
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showStatus("❌ กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น", "error");
+                return;
+            }
+
+            // Reset หน้าจอ
+            resultBox.style.display = 'none';
+            displayArea.style.display = 'block';
+            showStatus("", "");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // โชว์รูป
+            const url = URL.createObjectURL(file);
+            img.src = url;
+            
+            img.onload = () => {
+                canvas.width = img.clientWidth;
+                canvas.height = img.clientHeight;
+                
+                // เริ่มกระบวนการส่งข้อมูล
+                uploadAndDetect(file);
+            };
+        }
+
+        // --- ฟังก์ชันส่งข้อมูลไปหา AI ---
+        async function uploadAndDetect(file) {
+            imgWrapper.classList.add('loading'); // เริ่ม Animation สแกน
+            
+            // Step 1: ปลุก Server (Ping)
+            // ยิง GET ไปที่ URL หลักของ Server (/) เพื่อแก้ปัญหา 405/Cold Start
+            showStatus("⏳ กำลังเชื่อมต่อกับสมอง AI (อาจใช้เวลา 1 นาทีถ้า Server หลับอยู่)...", "process");
+            
+            try {
+                // GET request สำหรับ Ping/Wake-Up (ใช้ Root URL)
+                const wakeUp = await fetch(SERVER_ROOT_URL, { method: 'GET' });
+                
+                if(!wakeUp.ok) throw new Error(`Server ไม่ตอบสนอง (HTTP ${wakeUp.status})`);
+
+                // Step 2: ส่งรูปภาพ (POST request ไปที่ /detect)
+                showStatus("🚀 Server พร้อมแล้ว! กำลังวิเคราะห์สินค้า...", "process");
+
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const response = await fetch(DETECT_ENDPOINT, { // ใช้ DETECT_ENDPOINT
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errData = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${errData}`);
+                }
+
+                const data = await response.json();
+
+                // Step 3: แสดงผล
+                imgWrapper.classList.remove('loading');
+                showStatus("✅ วิเคราะห์เสร็จสิ้น", "success");
+                
+                // วาดกรอบ
+                drawBoxes(data.detections);
+                
+                // โชว์ตัวเลข
+                countNum.innerText = data.count; // ดึงค่า count จาก Backend
+                resultBox.style.display = 'block';
+
+            } catch (error) {
+                console.error(error);
+                imgWrapper.classList.remove('loading');
+                
+                let msg = error.message;
+                if(msg.includes("Failed to fetch")) {
+                    msg = "ไม่สามารถติดต่อ Server ได้ (เน็ตหลุด, CORS, หรือ Server ยังไม่ตื่น)";
+                } else if (msg.includes("405")) {
+                    msg = "การเชื่อมต่อถูกปฏิเสธ (405 Method Not Allowed) - กรุณาตรวจสอบ URL";
+                }
+                showStatus(`❌ เกิดข้อผิดพลาด: ${msg}`, "error");
+            }
+        }
+
+        function drawBoxes(detections) {
+            const scaleX = canvas.width / img.naturalWidth;
+            const scaleY = canvas.height / img.naturalHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            
+            detections.forEach(det => {
+                const [x1, y1, x2, y2] = det.box;
+                
+                // แปลงพิกัด
+                const rectX = x1 * scaleX;
+                const rectY = y1 * scaleY;
+                const rectW = (x2 - x1) * scaleX;
+                const rectH = (y2 - y1) * scaleY;
+
+                // วาดกรอบสไตล์ Sci-Fi
+                ctx.strokeStyle = "#00ff9d";
+                ctx.lineWidth = 2;
+                ctx.shadowColor = "#00ff9d";
+                ctx.shadowBlur = 10;
+                ctx.strokeRect(rectX, rectY, rectW, rectH);
+                ctx.shadowBlur = 0;
+
+                // ป้ายชื่อ
+                ctx.fillStyle = "rgba(0, 255, 157, 0.8)";
+                const text = `${det.label} ${Math.round(det.confidence * 100)}%`;
+                ctx.font = "600 12px Inter";
+                const textWidth = ctx.measureText(text).width;
+                const textPadding = 5;
+                const textHeight = 20;
+                
+                // วาดพื้นหลัง
+                ctx.fillRect(rectX, rectY - textHeight, textWidth + (textPadding * 2), textHeight);
+
+                // เขียนข้อความ
+                ctx.fillStyle = "#000";
+                ctx.fillText(text, rectX + textPadding, rectY - 6);
+            });
+        }
+
+        function showStatus(text, type) {
+            statusText.innerText = text;
+            statusText.className = "status-text"; 
+            if (type === "process") statusText.classList.add("text-process");
+            if (type === "error") statusText.classList.add("text-error");
+            if (type === "success") statusText.classList.add("text-success");
+        }
+    </script>
+</body>
+</html>
